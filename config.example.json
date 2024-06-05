@@ -1,0 +1,11 @@
+{
+  "discord": {
+    "token": "",
+    "guildsIds": [""],
+    "clipsChannelsIds": {},
+    "appId": ""
+  },
+  "youtube": {
+    "allowedChannels": [""]
+  }
+}

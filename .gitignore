@@ -1,0 +1,5 @@
+*-lock.yaml
+node_modules
+config.json
+db.json
+*.mp4
