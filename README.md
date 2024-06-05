@@ -16,7 +16,7 @@ npm install
 
 3. Copie o arquivo `config.example.json` e renomeie para `config.json` e edite o arquivo para adicionar as informações necessárias:
 
-```json
+```js
 {
   "discord": {
     "token": "", // Token da aplicação
