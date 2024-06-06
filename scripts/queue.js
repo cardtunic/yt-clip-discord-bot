@@ -27,12 +27,25 @@ function queue() {
   }
 
   /**
+   *
+   * @returns {{
+   *   downloading: Array<{authorId: number, clipId: string}>,
+   *   queue: Array<{authorId: number, clipId: string}>,
+   *   downloaded: Array<{clipId: string, discordUrl: string}>
+   * }}
+   */
+
+  function database() {
+    return JSON.parse(fs.readFileSync("db.json"));
+  }
+
+  /**
    * Checks if a clip is currently being processed (downloading or in queue).
    * @param {string} clipId - The ID of the clip to check.
    * @returns {boolean} True if the clip is being processed, otherwise false.
    */
   function isProcessing(clipId) {
-    const db = JSON.parse(fs.readFileSync("db.json"));
+    const db = database();
     return db.downloading.includes(clipId) || db.queue.includes(clipId);
   }
 
@@ -42,30 +55,52 @@ function queue() {
    * @returns {null|{clipId: string, discordUrl: string}} The downloaded clip object if found, otherwise false.
    */
   function hasBeenDownloaded(clipId) {
-    const db = JSON.parse(fs.readFileSync("db.json"));
+    const db = database();
     return db.downloaded.find((download) => download.clipId === clipId);
   }
 
   function queuePosition(clipId) {
-    const db = JSON.parse(fs.readFileSync("db.json"));
+    const db = database();
     return {
       position: db.queue.findIndex((queueItem) => queueItem === clipId),
       total: db.queue.length,
     };
   }
 
-  function addToQueue(authorId, clipId) {
-    const db = JSON.parse(fs.readFileSync("db.json"));
+  /**
+   *
+   * @param {number} authorId
+   * @param {string} url
+   * @param {import("discord.js").Channel} videoChannel
+   * @returns {"queued"|"alreadyDownloaded"|"invalidUrl"}
+   */
+  function addToQueue(authorId, url, videoChannel) {
+    const [youtubeUrl] =
+      String(url).match(
+        /^https?:\/\/(www\.)?youtube\.com\/clip\/[A-Za-z0-9_-]+(\?.*)?$/
+      ) ?? [];
+
+    if (!youtubeUrl) return "invalidUrl";
+
+    const clipId = youtubeUrl.split("/").slice(-1)[0].split("?")[0];
+
+    if (hasBeenDownloaded(clipId)) return "alreadyDownloaded";
+
+    const db = database();
+
     db.queue.push({
-      author: authorId,
+      authorId: authorId,
       clipId: clipId,
     });
 
     fs.writeFileSync("db.json", JSON.stringify(db, null, 4));
+    downloadLast(videoChannel);
+
+    return "queued";
   }
 
   function isDownloading() {
-    const db = JSON.parse(fs.readFileSync("db.json"));
+    const db = database();
     return db.downloading.length > 0;
   }
 
@@ -73,7 +108,7 @@ function queue() {
    * Downloads the last clip in the queue.
    */
   async function downloadLast(videoChannel) {
-    const db = JSON.parse(fs.readFileSync("db.json"));
+    const db = database();
 
     db.downloading.pop();
 

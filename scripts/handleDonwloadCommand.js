@@ -1,52 +1,41 @@
-const queueModule = require("./queue");
-
-async function handleDownloadCommand(interaction, videoChannel) {
-  let [youtubeUrl] =
-    String(interaction.options.getString("url")).match(
-      /^https?:\/\/(www\.)?youtube\.com\/clip\/[A-Za-z0-9_-]+(\?.*)?$/
-    ) ?? [];
-
-  if (!youtubeUrl) {
+const responses = {
+  invalidUrl: async (interaction) =>
     await interaction.reply({
       content: `❌ Esse não é um link válido. Apenas clipes do youtube são aceitos!`,
       ephemeral: true,
-    });
+    }),
 
-    return;
-  }
-
-  const clipId = youtubeUrl.split("/").slice(-1)[0].split("?")[0];
-  const queue = queueModule();
-  const downloadedClip = queue.hasBeenDownloaded(clipId);
-
-  if (downloadedClip) {
+  alreadyDownloaded: async (interaction) =>
     await interaction.reply({
       content: `⚠ Clip já foi baixado. ${downloadedClip.discordUrl}`,
       ephemeral: true,
-    });
+    }),
 
-    return;
-  }
-
-  if (queue.isProcessing(clipId)) {
+  processing: async (interaction) =>
     await interaction.reply({
       content: `⏬ Seu clip está sendo baixado. Quando terminar, ele vai aparecer aqui.`,
       ephemeral: true,
-    });
+    }),
 
-    return;
-  }
+  queued: async (interaction) =>
+    await interaction.reply({
+      content: `⏱ Seu vídeo foi colocado na fila, em breve ele vai aparecer aqui.`,
+      ephemeral: true,
+    }),
+};
 
-  queue.addToQueue(interaction.user.id, clipId);
+/**
+ *
+ * @param {import("discord.js").Interaction<import("discord.js").CacheType>} interaction
+ * @param {import("discord.js").Channel} videoChannel
+ */
+async function handleDownloadCommand(interaction, videoChannel) {
+  const { addToQueue } = require("./queue")();
+  const url = interaction.options.getString("url");
 
-  await interaction.reply({
-    content: `⏱ Seu vídeo foi colocado na fila, em breve ele vai aparecer aqui.`,
-    ephemeral: true,
-  });
+  const status = addToQueue(interaction.user.id, url, videoChannel);
 
-  if (!queue.isDownloading()) {
-    await queue.downloadLast(videoChannel);
-  }
+  await responses[status](interaction);
 }
 
 module.exports = handleDownloadCommand;
