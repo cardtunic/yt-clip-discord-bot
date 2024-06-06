@@ -20,10 +20,13 @@ async function downloadYtdlp(clipId) {
   }
 
   if (metadata.live_status !== "is_live") {
-    return downloadClip(clipId);
+    return { title: metadata.fulltitle, download: downloadClip(clipId) };
   }
 
-  return downloadLiveClip(metadata, clipId);
+  return {
+    title: metadata.fulltitle,
+    download: downloadLiveClip(metadata, clipId),
+  };
 }
 
 function downloadClip(clipId) {

@@ -88,7 +88,7 @@ function queue() {
     fs.writeFileSync("db.json", JSON.stringify(db, null, 4));
 
     const { clipId, author } = db.downloading[0];
-    const ytDlpWrap = await downloadYtdlp(clipId);
+    const { title, download: ytDlpWrap } = await downloadYtdlp(clipId);
 
     if (!ytDlpWrap) {
       downloadLast(videoChannel);
@@ -112,7 +112,7 @@ function queue() {
       })
       .on("close", async () => {
         const path = `./videos/${clipId}.mp4`;
-        const message = await sendAttachment(path, author, videoChannel);
+        const message = await sendAttachment(path, title, author, videoChannel);
 
         db.downloaded.push({ clipId: clipId, discordUrl: message.url });
         fs.writeFileSync("db.json", JSON.stringify(db, null, 4));

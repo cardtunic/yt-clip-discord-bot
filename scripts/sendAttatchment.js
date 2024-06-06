@@ -6,10 +6,10 @@ const { AttachmentBuilder } = require("discord.js");
  * @param {string} channelId
  * @returns
  */
-async function sendAttachment(path, author, videoChannel) {
+async function sendAttachment(path, title, author, videoChannel) {
   const attachment = new AttachmentBuilder(path);
   const message = await videoChannel.send({
-    content: `Clipe feito por <@${author}>`,
+    content: `${title} • _feito por <@${author}>_`,
     files: [attachment],
   });
 
