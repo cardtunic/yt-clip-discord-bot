@@ -1,4 +1,5 @@
 *-lock.yaml
+*-lock.json
 node_modules
 config.json
 db.json

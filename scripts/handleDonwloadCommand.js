@@ -37,14 +37,16 @@ async function handleDownloadCommand(interaction, videoChannel) {
     return;
   }
 
-  queue.addToQueue(clipId);
+  queue.addToQueue(interaction.user.id, clipId);
 
   await interaction.reply({
     content: `⏱ Seu vídeo foi colocado na fila, em breve ele vai aparecer aqui.`,
     ephemeral: true,
   });
 
-  await queue.downloadLast(videoChannel);
+  if (!queue.isDownloading()) {
+    await queue.downloadLast(videoChannel);
+  }
 }
 
 module.exports = handleDownloadCommand;

@@ -14,11 +14,15 @@ function queue() {
   if (!fs.existsSync("db.json")) {
     fs.writeFileSync(
       "db.json",
-      JSON.stringify({
-        downloading: [],
-        queue: [],
-        downloaded: [],
-      })
+      JSON.stringify(
+        {
+          downloading: [],
+          queue: [],
+          downloaded: [],
+        },
+        null,
+        4
+      )
     );
   }
 
@@ -50,11 +54,19 @@ function queue() {
     };
   }
 
-  function addToQueue(clipId) {
+  function addToQueue(authorId, clipId) {
     const db = JSON.parse(fs.readFileSync("db.json"));
-    db.queue.push(clipId);
+    db.queue.push({
+      author: authorId,
+      clipId: clipId,
+    });
 
-    fs.writeFileSync("db.json", JSON.stringify(db));
+    fs.writeFileSync("db.json", JSON.stringify(db, null, 4));
+  }
+
+  function isDownloading() {
+    const db = JSON.parse(fs.readFileSync("db.json"));
+    return db.downloading.length > 0;
   }
 
   /**
@@ -66,16 +78,16 @@ function queue() {
     db.downloading.pop();
 
     if (db.queue.length === 0) {
-      fs.writeFileSync("db.json", JSON.stringify(db));
+      fs.writeFileSync("db.json", JSON.stringify(db, null, 4));
       return;
     }
 
     db.downloading.push(db.queue.slice(-1)[0]);
     db.queue.pop();
 
-    fs.writeFileSync("db.json", JSON.stringify(db));
+    fs.writeFileSync("db.json", JSON.stringify(db, null, 4));
 
-    const clipId = db.downloading[0];
+    const { clipId, author } = db.downloading[0];
     const ytDlpWrap = await downloadYtdlp(clipId);
 
     if (!ytDlpWrap) {
@@ -100,10 +112,10 @@ function queue() {
       })
       .on("close", async () => {
         const path = `./videos/${clipId}.mp4`;
-        const message = await sendAttachment(path, videoChannel);
+        const message = await sendAttachment(path, author, videoChannel);
 
         db.downloaded.push({ clipId: clipId, discordUrl: message.url });
-        fs.writeFileSync("db.json", JSON.stringify(db));
+        fs.writeFileSync("db.json", JSON.stringify(db, null, 4));
 
         downloadLast(videoChannel);
       });
@@ -112,6 +124,7 @@ function queue() {
   return {
     isProcessing,
     queuePosition,
+    isDownloading,
     hasBeenDownloaded,
     addToQueue,
     downloadLast,
